@@ -1,111 +1,74 @@
 from dataclasses import dataclass
-from random import random, randint
+from random import choice, randint
+from trait import Trait
+
+PROTECTION_DECAY_AMOUNT = 1
+COMFORT_DECAY_AMOUNT = 1
+
+DESCRIPTIONS = {
+    "protection": {
+        0: "no doors or windows, open structure with exposed interior.",
+        10: "basic door frame with no locks, uncovered windows, no visible barriers.",
+        20: "simple wood doors, single-pane windows with no bars or reinforcement, minimal fencing.",
+        30: "standard doors with deadbolts, standard single-pane glass, low garden fence.",
+        40: "thicker doors, double-pane windows, visible basic locks, low hedges or walls.",
+        50: "heavy wood or metal doors, impact-resistant windows, moderate-height fence or wall.",
+        60: "steel-framed doors, shatter-resistant windows, taller fence or stone wall.",
+        70: "reinforced steel doors, laminated glass, security cameras or motion lights, tall fence with restricted view.",
+        80: "steel doors with bar locks, bulletproof glass, high walls, multiple cameras, visible alarm system.",
+        90: "thick steel-reinforced walls, multi-layered windows, surveillance towers, visible guard equipment.",
+        100: "armored doors, blast-resistant windows, high perimeter walls with barbed wire, extensive surveillance, visible entry restrictions (gates, guards).",
+    }
+}
 
 
 @dataclass
 class Location:
+    address: str
     occupied: bool = False
-    name: str = "House"
-    protected: float = 0.0
-    hidden_site: float = 0.0
-    concealed: float = 0.0
-    accessible: float = 0.0
-    comfortable: float = 0.0
-    waterproof: float = 0.0
-    fireproof: float = 0.0
-
-    observable_range: int = 0
+    name: str = "Townhouse"
+    floors: int = 1
+    protection: Trait = Trait("Protection", 50, 100, PROTECTION_DECAY_AMOUNT)
+    comfort: Trait = Trait("Comfort", 70, 100, COMFORT_DECAY_AMOUNT)
     consumables: int = 0
     supplies: int = 0
 
     @staticmethod
-    def random():
+    def random_location():
         return Location(
-            occupied=False,
+            address=f"{randint(1, 200)} Fake St.",
+            occupied=choice([True, False]),
             name="house",
-            protected=round(random(), 2),
-            hidden_site=round(random(), 2),
-            concealed=round(random(), 2),
-            accessible=round(random(), 2),
-            comfortable=round(random(), 2),
-            waterproof=round(random(), 2),
-            fireproof=round(random(), 2),
-            observable_range=randint(0, 100),
+            floors=randint(1, 4),
+            protection=Trait(
+                "Protection", randint(0, 100), 100, PROTECTION_DECAY_AMOUNT
+            ),
+            comfort=Trait("Comfort", randint(0, 100), 100, COMFORT_DECAY_AMOUNT),
             consumables=randint(0, 100),
             supplies=randint(0, 100),
         )
 
     def describe(self):
-        BUCKET_SIZE = 0.2
-        protection_words = [
-            "Vulnerable",
-            "Fragile",
-            "Moderately Protected",
-            "Reinforced and Sturdy",
-            "Impenetrable",
-        ]
-        hidden_words = [
-            "In plain sight",
-            "Visible",
-            "Obscured",
-            "Camouflaged",
-            "Hidden",
-        ]
-
-        accessible_words = [
-            "Inaccessible",
-            "Hard to Access",
-            "Challenging to get to",
-            "Accessible",
-            "Easily Accessible",
-        ]
-        comfort_words = [
-            "Unbearable",
-            "Uncomfortable",
-            "Tolerable",
-            "Cozy",
-            "Luxurious",
-        ]
-        waterproof_words = [
-            "Not waterproof",
-            "Water-resistant",
-            "Water-repellent",
-            "Waterproof",
-            "Submersible",
-        ]
-        fireproof_words = [
-            "Not fireproof",
-            "Fire-resistant",
-            "Fire-retardant",
-            "Fireproof",
-            "Fire-safe",
-        ]
-
-        observable_range = [
-            "Close range",
-            "Short distance",
-            "Moderate distance",
-            "Long distance",
-            "Far vantage",
-        ]
-        provisioned_scale = [
-            "Bare",
-            "Sparsely stocked",
-            "Adequately stocked",
-            "Well stocked",
-            "Fully stocked",
-        ]
-
-        msg = "An "
-        if not self.occupied:
-            msg += "un"
-        msg += f"occupied {self.name}. "
-        msg += f"It appears {protection_words[int(self.protected//BUCKET_SIZE)]}. "
-        msg += f"It is {hidden_words[int(self.hidden_site//BUCKET_SIZE)]} "
-        msg += f"and {accessible_words[int(self.accessible//BUCKET_SIZE)]} from the main road."
-        msg += f"Looks like a {comfort_words[int(self.comfortable//BUCKET_SIZE)]} place to stay "
-        msg += f"thats {waterproof_words[int(self.waterproof//BUCKET_SIZE)]}, {fireproof_words[int(self.fireproof//BUCKET_SIZE)]}, and {provisioned_scale[int(self.consumables//(BUCKET_SIZE* 100))]}."
+        msg = f"{self.address}: a {'single' if self.floors == 1 else self.floors} story townhouse. "
+        msg += f"It looks {'un' if not self.occupied else ''}occupied. "
+        msg += f"It appears to have {DESCRIPTIONS['protection'][round(self.protection.value, -1)]} "
         return msg
+
+    # def describe_exterior(self):
+    #     msg = "An "
+    #     if not self.occupied:
+    #         msg += "un"
+    #     msg += f"occupied {self.name}. "
+    #     # msg += f"It appears {protection_words[int(self.protection//BUCKET_SIZE)]}. "
+    #     # msg += f"Looks like a {comfort_words[int(self.comfort//BUCKET_SIZE)]} place to stay "
+    #     return msg
+
+    # def describe_interior(self):
+    #     msg = "It looks "
+    #     if not self.occupied:
+    #         msg += "un"
+    #     msg += "occupied. "
+    #     msg += "We found a lot of junk."
 
     def __str__(self):
         return self.describe()
