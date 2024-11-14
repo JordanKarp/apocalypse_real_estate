@@ -16,6 +16,10 @@ class Trait:
             self._value = 0
         return self._value
 
+    @property
+    def percent(self):
+        return round(self.value / self.max_value, 2)
+
     def decay(self, modifier=1):
         self._value -= self.decay_rate * modifier
 

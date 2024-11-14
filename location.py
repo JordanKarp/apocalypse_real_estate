@@ -36,7 +36,7 @@ class Location:
     @staticmethod
     def random_location():
         return Location(
-            address=f"{randint(1, 200)} Fake St.",
+            address=f"{randint(1, 200)} Fake St",
             occupied=choice([True, False]),
             name="house",
             floors=randint(1, 4),
@@ -49,7 +49,7 @@ class Location:
         )
 
     def describe(self):
-        msg = f"{self.address}: a {'single' if self.floors == 1 else self.floors} story townhouse. "
+        msg = f"{self.address} - a {'single' if self.floors == 1 else self.floors} story townhouse. "
         msg += f"It looks {'un' if not self.occupied else ''}occupied. "
         msg += f"It appears to have {DESCRIPTIONS['protection'][round(self.protection.value, -1)]} "
         return msg
