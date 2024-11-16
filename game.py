@@ -119,14 +119,14 @@ class Game(State):
         if self.party.settled:
             options.append(
                 (
-                    GameMenu.INCREASE_PROTECTION,
+                    GameMenu.BUILD_PROTECTION,
                     int(BUILD_COST * self.apocalypse.mult["build_protection_cost"]),
                     SUPPLIES_NEEDED_TO_BUILD,
                 )
             )
             options.append(
                 (
-                    GameMenu.INCREASE_COMFORT,
+                    GameMenu.BUILD_COMFORT,
                     int(BUILD_COST * self.apocalypse.mult["build_comfort_cost"]),
                     SUPPLIES_NEEDED_TO_BUILD,
                 )
@@ -186,7 +186,7 @@ class Game(State):
 
         elif choice_str == GameMenu.TRAVEL:
             self.days_to_pass = TRAVEL_DAYS * self.apocalypse.mult["travel_cost"]
-            print(f"{self.days_to_pass} days pass on your journey.")
+            self.party.travel(self.days_to_pass)
 
         elif choice_str == GameMenu.SCOUT:
             # TODO make better than adding 1-3 random locations
@@ -327,7 +327,7 @@ class Game(State):
             self.party.energy.adjust_amount(-amt)
             print(f"Spent {amt} energy stealing")
 
-        elif choice_str == GameMenu.INCREASE_COMFORT:
+        elif choice_str == GameMenu.BUILD_COMFORT:
             amt = int(COMFORT_ADD_AMOUNT * self.party.settled.comfort.percent)
             self.party.settled.comfort.add_amount(amt)
             print(f"Added {amt} to comfort")
@@ -337,9 +337,9 @@ class Game(State):
             self.party.energy.adjust_amount(-amt)
             print(f"Spent {amt} energy improving comfort")
 
-        elif choice_str == GameMenu.INCREASE_PROTECTION:
+        elif choice_str == GameMenu.BUILD_PROTECTION:
             amt = int(PROTECTION_ADD_AMOUNT * self.party.settled.protection.percent)
-            self.party.settled.protection.add_amount(amt)
+            self.party.settled.protection.adjust_amount(amt)
             print(f"Added {amt} to protection")
             print(f"Used {SUPPLIES_NEEDED_TO_BUILD} supplies")
 

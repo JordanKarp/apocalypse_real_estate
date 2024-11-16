@@ -145,11 +145,18 @@ class Party:
     def settle_location(self, location):
         self.settled = location
         self.consumables += location.consumables
+        print(f"Gained {location.consumables} consumables")
         self.supplies += location.supplies
+        print(f"Gained {location.supplies} supplies")
         self.scouted.remove(location)
 
     def abandon_location(self):
         self.settled = None
+
+    def travel(self, days_to_travel):
+        print(f"{days_to_travel} days will pass on your journey.")
+        self.scouted = []
+        self.scavenged = []
 
     def daily_energy_adjust(self, rest_amount):
         if self.consumables >= self.consumables_needed:

@@ -2,7 +2,7 @@ from os import path
 import pickle
 
 from state import State
-from utility import clear, pick_option, colored
+from utility import clear, pick_option, colored, create_table
 
 MAX_HIGH_SCORES = 10
 
@@ -46,7 +46,7 @@ class HighScoresState(State):
         self.scoreboard.append((initials, new_score))
         # Sort and limit to to 10
         self.scoreboard.sort(key=lambda tup: tup[1], reverse=True)
-        if len(self.scoreboard) >= self.max_high_scores:
+        if len(self.scoreboard) >= self.max_high_scores + 1:
             self.scoreboard = self.scoreboard[: self.max_high_scores]
         # Save Scoreboard
         self.save_scores()
@@ -55,8 +55,9 @@ class HighScoresState(State):
         """Draw state"""
         print(colored("High Scores", "underline"))
         if self.scoreboard:
-            for num, (name, score) in enumerate(self.scoreboard, 1):
-                print(f"{num}. {name.ljust(18)} \t\t\t{score}")
+            print(create_table(self.scoreboard, False))
+            # for num, (name, score) in enumerate(self.scoreboard, 1):
+            #     print(f"{num}. {name.ljust(18)} \t\t\t{score}")
         else:
             print("No high scores currently.")
         print()
