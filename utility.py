@@ -72,3 +72,22 @@ def create_table(data, header=True):
             table += separator + "\n"
 
     return table.strip()
+
+
+def list2d_get(lst, row, col, default=None):
+    """
+    Gets the value at the specified row and column in a 2D list,
+    or returns a default value if the indices are out of range.
+
+    Args:
+        lst (list[list]): The 2D list to access.
+        row (int): The row index to retrieve.
+        col (int): The column index to retrieve.
+        default: The value to return if the indices are out of range. Default is None.
+
+    Returns:
+        The value at the specified indices or the default value.
+    """
+    if 0 <= row < len(lst) and 0 <= col < len(lst[row]):
+        return lst[row][col]
+    return default
