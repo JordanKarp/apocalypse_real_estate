@@ -1,5 +1,6 @@
 from menu_options import ApocalypseMenu, PartyMenu
 from apocalypse import Apocalypse
+from map import Map
 from party import Party
 from state import State
 from utility import clear, pick_option, colored
@@ -47,11 +48,25 @@ class GameSetupState(State):
             party = Party()
         self.persist["party"] = party
 
+    def create_map(self):
+        dimensions = (15, 90)
+        num_buildings = 50
+        game_map = Map(dimensions)
+        game_map.add_road(False, 4, 1, 84)
+        game_map.add_road(False, 8, 25, 40)
+        game_map.add_road(True, 3, 2, 8)
+        game_map.add_road(False, 9, 5, 30)
+        game_map.add_road(True, 1, 28, 20)
+        game_map.add_buildings(num_buildings)
+
+        self.persist["map"] = game_map
+
     def run(self):
         clear()
         self.print_header()
         self.pick_apocalypse()
         self.pick_party()
+        self.create_map()
         input("Press enter to start. ")
         self.next_state = "GAME"
 

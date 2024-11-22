@@ -1,11 +1,9 @@
 from random import randint
 
-from apocalypse import Apocalypse
-from apocalypse_scenarios import ApocalypseScenarios
 from location import Location
 from menu_options import GameMenu
 from party import Party
-from utility import clear, colored, pick_option, create_table
+from utility import clear, colored, pick_option, create_table, proceed
 from state import State
 
 
@@ -37,6 +35,7 @@ class Game(State):
         self.day_number = 1
         self.days_to_pass = 1
         self.apocalypse = None
+        self.map = None
         self.party = None
         self.locations = []
 
@@ -48,6 +47,7 @@ class Game(State):
         self.persist = persistent
         self.apocalypse = self.persist.get("apocalypse", "Pandemic")
         self.party = self.persist.get("party", Party())
+        self.map = self.persist.get("map", None)
 
     def print_header(self):
         print("-" * 5, f"Day {self.day_number} - {self.apocalypse.name}", "-" * 5)
@@ -56,7 +56,7 @@ class Game(State):
 
     def present_options(self):
         options = [
-            # (GameMenu.SHOW_SCOUTED, None),
+            (GameMenu.SHOW_MAP, 0, 0),
             # (GameMenu.SHOW_PARTY, None),
             (GameMenu.NOTHING, 0, 0),
             (GameMenu.SCOUT, int(SCOUT_COST * self.apocalypse.mult["scout_cost"]), 0),
@@ -78,44 +78,42 @@ class Game(State):
 
         if self.party.scouted:
             if any(not loc.occupied for loc in self.party.scouted):
-                options.append(
+                options.extend(
                     (
-                        GameMenu.SETTLE,
-                        int(SETTLE_COST * self.apocalypse.mult["settle_cost"]),
-                        SUPPLIES_NEEDED_TO_BUILD,
+                        (
+                            GameMenu.SETTLE,
+                            int(SETTLE_COST * self.apocalypse.mult["settle_cost"]),
+                            SUPPLIES_NEEDED_TO_BUILD,
+                        ),
+                        (
+                            GameMenu.SCAVENGE,
+                            int(SCAVENGE_COST * self.apocalypse.mult["scavenge_cost"]),
+                            0,
+                        ),
                     )
                 )
-                options.append(
-                    (
-                        GameMenu.SCAVENGE,
-                        int(SCAVENGE_COST * self.apocalypse.mult["scavenge_cost"]),
-                        0,
-                    )
-                )
-
             if any(loc.occupied for loc in self.party.scouted):
-                options.append(
+                options.extend(
                     (
-                        GameMenu.NEGOTIATE,
-                        int(NEGOTIATE_COST * self.apocalypse.mult["negotiate_cost"]),
-                        0,
+                        (
+                            GameMenu.NEGOTIATE,
+                            int(
+                                NEGOTIATE_COST * self.apocalypse.mult["negotiate_cost"]
+                            ),
+                            0,
+                        ),
+                        (
+                            GameMenu.THREATEN,
+                            int(THREATEN_COST * self.apocalypse.mult["threaten_cost"]),
+                            0,
+                        ),
+                        (
+                            GameMenu.STEAL,
+                            int(STEAL_COST * self.apocalypse.mult["steal_cost"]),
+                            0,
+                        ),
                     )
                 )
-                options.append(
-                    (
-                        GameMenu.THREATEN,
-                        int(THREATEN_COST * self.apocalypse.mult["threaten_cost"]),
-                        0,
-                    )
-                )
-                options.append(
-                    (
-                        GameMenu.STEAL,
-                        int(STEAL_COST * self.apocalypse.mult["steal_cost"]),
-                        0,
-                    )
-                )
-
         if self.party.settled:
             options.append(
                 (
@@ -124,52 +122,50 @@ class Game(State):
                     SUPPLIES_NEEDED_TO_BUILD,
                 )
             )
-            options.append(
+            options.extend(
                 (
-                    GameMenu.BUILD_COMFORT,
-                    int(BUILD_COST * self.apocalypse.mult["build_comfort_cost"]),
-                    SUPPLIES_NEEDED_TO_BUILD,
+                    (
+                        GameMenu.BUILD_COMFORT,
+                        int(BUILD_COST * self.apocalypse.mult["build_comfort_cost"]),
+                        SUPPLIES_NEEDED_TO_BUILD,
+                    ),
+                    (
+                        GameMenu.ABANDON,
+                        int(ABANDON_COST * self.apocalypse.mult["abandon_cost"]),
+                        0,
+                    ),
                 )
             )
-            options.append(
-                (
-                    GameMenu.ABANDON,
-                    int(ABANDON_COST * self.apocalypse.mult["abandon_cost"]),
-                    0,
-                )
-            )
-
         options.append((GameMenu.QUIT, None, None))
 
         table = [["#", "Description", "Energy", "Supplies"]]
         for num, (opt, cost, sup) in enumerate(options, 1):
-            if isinstance(cost, int):
+            if isinstance(cost, (int, str)):
                 table.append([f"{num}.", opt, cost, sup])
-                # print(f"{num}. ({cost} energy) {opt}")
-            elif isinstance(cost, str):
-                table.append([f"{num}.", opt, cost, sup])
-                # print(f"{num}. ({cost}) {opt}")
             else:
                 table.append([f"{num}.", opt, "", ""])
-                # print(f"{num}. {opt}")
 
         print(create_table(table, True))
         return [opt for opt, _, _ in options]
 
     def implement(self, choice_str):
+        if choice_str == GameMenu.NOTHING:
+            return
         # DISPLAY OPTIONS
         if choice_str == GameMenu.SHOW_SCOUTED:
             self.party.display_scouted_locations()
-            input("Press enter to return to menu.")
+            proceed()
             self.deciding_loop()
 
         elif choice_str == GameMenu.SHOW_PARTY:
             self.party.display_full_stats()
-            input("Press enter to return to menu.")
+            proceed()
             self.deciding_loop()
 
-        elif choice_str == GameMenu.NOTHING:
-            pass
+        elif choice_str == GameMenu.SHOW_MAP:
+            self.map.draw_map()
+            proceed()
+            self.deciding_loop()
 
         elif choice_str == GameMenu.IMPROVE:
             self.party.display_party_skills(enumerate=True)
@@ -187,6 +183,7 @@ class Game(State):
         elif choice_str == GameMenu.TRAVEL:
             self.days_to_pass = TRAVEL_DAYS * self.apocalypse.mult["travel_cost"]
             self.party.travel(self.days_to_pass)
+            # TODO: Generate new area
 
         elif choice_str == GameMenu.SCOUT:
             # TODO make better than adding 1-3 random locations
@@ -227,17 +224,11 @@ class Game(State):
             consume = randint(1, amount_to_scav)
             supply = amount_to_scav - consume
             # gain amount, or as much as they have of each type
-            if choice.supplies >= supply:
-                amt = supply
-            else:
-                amt = choice.supplies
+            amt = supply if choice.supplies >= supply else choice.supplies
             self.party.supplies += amt
             print(f"Gained {amt} supplies.")
 
-            if choice.consumables >= consume:
-                amt = consume
-            else:
-                amt = choice.supplies
+            amt = consume if choice.consumables >= consume else choice.supplies
             self.party.consumables += amt
             print(f"Gained {amt} consumables.")
 
@@ -256,9 +247,10 @@ class Game(State):
             # Pick place
             locs = self.party.display_occupied_locations()
             choice = pick_option("With which location do you want to negotiate?", locs)
-            vals = []
-            for _ in range(NUM_DEFENDING_CHANCES):
-                vals.append(randint(1, choice.protection.value))
+            vals = [
+                randint(1, choice.protection.value)
+                for _ in range(NUM_DEFENDING_CHANCES)
+            ]
             defending = max(vals)
             attacking = randint(0, self.party.negotiate_skill.value)
             if defending < attacking:
@@ -281,9 +273,10 @@ class Game(State):
             # Pick place
             locs = self.party.display_occupied_locations()
             choice = pick_option("Which location do you want to threaten?", locs)
-            vals = []
-            for _ in range(NUM_DEFENDING_CHANCES):
-                vals.append(randint(1, choice.protection.value))
+            vals = [
+                randint(1, choice.protection.value)
+                for _ in range(NUM_DEFENDING_CHANCES)
+            ]
             defending = max(vals)
             attacking = randint(0, self.party.threaten_skill.value)
             if defending < attacking:
@@ -306,9 +299,10 @@ class Game(State):
             # Pick place
             locs = self.party.display_occupied_locations()
             choice = pick_option("From which location do you want to steal?", locs)
-            vals = []
-            for _ in range(NUM_DEFENDING_CHANCES):
-                vals.append(randint(1, choice.protection.value))
+            vals = [
+                randint(1, choice.protection.value)
+                for _ in range(NUM_DEFENDING_CHANCES)
+            ]
             defending = max(vals)
             attacking = randint(0, self.party.steal_skill.value)
             if defending < attacking:
@@ -368,7 +362,7 @@ class Game(State):
         self.playing = False
 
     def pass_day(self, number_of_days=1):
-        for day in range(number_of_days):
+        for _ in range(number_of_days):
             for house in self.party.scouted:
                 house.protection.decay()
                 house.comfort.decay()

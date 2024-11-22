@@ -1,12 +1,12 @@
 from random import choice, sample
 from location import Location
 from map_constants import Buildings, Icons, Tile, ROAD_NAMES
-from utility import list2d_get, colored, distance_points
+from utility import list2d_get, colored, distance_points, extract_subgrid
 
 MIN_ROAD_LENGTH = 3
 MAP_COLUMNS = 90
 MAP_ROWS = 15
-VIEW_DISTANCE = 80
+VIEW_DISTANCE = 7
 
 
 class Map:
@@ -16,6 +16,7 @@ class Map:
         self.buildings = []
         self.current_location = [4, 28]
         self.data = [[" " for _ in range(dimensions[1])] for _ in range(dimensions[0])]
+        self.nearby = []
 
     def move_to(self, loc):
         self.current_location = loc
@@ -23,26 +24,30 @@ class Map:
     def move(self, direction):
         if direction == "UP":
             self.current_location[0] -= 1
-        if direction == "DOWN":
+        elif direction == "DOWN":
             self.current_location[0] += 1
-        if direction == "LEFT":
+        elif direction == "LEFT":
             self.current_location[1] -= 1
-        if direction == "RIGHT":
+        elif direction == "RIGHT":
             self.current_location[1] += 1
 
-    @property
-    def top_border_row(self):
+    def top_border_row(self, start=0, end=None):
+        if end is None:
+            end = self.dimensions[1]
         string = Icons.SINGLE_H_ROAD * self.dimensions[1]
         for num in self.streets["vert"]:
-            string = string[:num] + self.streets["vert"][num][0] + string[num + 1 :]
+            one_more = num + 1
+            string = string[:num] + self.streets["vert"][num][0] + string[one_more:]
 
+        string = string[start:end]
         return Icons.SINGLE_TL_CORNER + string + Icons.SINGLE_TR_CORNER
 
-    @property
-    def bottom_border_row(self):
+    def bottom_border_row(self, length=None):
+        if length is None:
+            length = self.dimensions[1]
         return (
             Icons.SINGLE_BL_CORNER
-            + Icons.SINGLE_H_ROAD * self.dimensions[1]
+            + Icons.SINGLE_H_ROAD * length
             + Icons.SINGLE_BR_CORNER
         )
 
@@ -56,7 +61,7 @@ class Map:
 
     def add_vertical_road(self, row_st, col_st, length, name):
         if length:
-            for i in range(length):
+            for _ in range(length):
                 if list2d_get(self.data, row_st, col_st, None) == Icons.EMPTY:
                     self.data[row_st][col_st] = Tile(
                         Icons.V_ROAD, (row_st, col_st), name
@@ -82,7 +87,7 @@ class Map:
                 col_st += 1
             self.streets["horiz"][row_st] = name
 
-    def add_buildings(self, num_buildings):
+    def determine_eligible_spots(self):
         eligible_spots = []
         for row in range(self.dimensions[0]):
             for col in range(self.dimensions[1]):
@@ -101,7 +106,10 @@ class Map:
                             num = row * 2 if is_even else row * 2 + 1
                         name = f"{num} {neighbors[0].name}"
                         eligible_spots.append((row, col, name))
+        return eligible_spots
 
+    def add_buildings(self, num_buildings):
+        eligible_spots = self.determine_eligible_spots()
         buildings = list(Buildings)
         for spot in sample(eligible_spots, num_buildings):
 
@@ -141,43 +149,90 @@ class Map:
         street = parts[1]  # Second part is the street name
         return (street, number)
 
-    def draw_map(self):
-        print()
-        print("The Map".center(self.dimensions[1]))
-        print(self.top_border_row)
-        for row_num, row in enumerate(self.data):
+    def draw_partial_map(self, row_st, row_end, col_st, col_end):
+        data = extract_subgrid(self.data, row_st, row_end, col_st, col_end)
+
+        # ! TODO FIX
+        adjusted_location = self.current_location
+
+        self.nearby = []
+        print("The Map".center(col_end - col_st // 2))
+        print(self.top_border_row(col_st, col_end))
+        for row_num, row in enumerate(data):
             char = Icons.SINGLE_V_ROAD
             if row_num in self.streets["horiz"]:
                 char = self.streets["horiz"][row_num][0]
             print(char, end="")
             for col_num, col in enumerate(row):
-                if [row_num, col_num] == self.current_location:
+
+                if [row_num, col_num] == adjusted_location:
                     print(colored("⭑", "red"), end="")
-                elif (
-                    distance_points(self.current_location, (row_num, col_num))
-                    > VIEW_DISTANCE
-                ):
-                    print("░", end="")
+                # elif (
+                #     distance_points(self.current_location, (row_num, col_num))
+                #     > VIEW_DISTANCE
+                # ):
+                #     print("░", end="")
+                elif isinstance(col, Tile):
+                    print(col.icon, end="")
+                    if col.icon in Buildings:
+                        self.nearby.append(col)
                 else:
-                    if isinstance(col, Tile):
-                        print(col.icon, end="")
-                    else:
-                        print(col, end="")
+                    print(col, end="")
 
             print(Icons.SINGLE_V_ROAD)
-        print(self.bottom_border_row)
+        print(self.bottom_border_row(col_end - col_st))
+
+        for elem in self.nearby:
+            print(elem.name)
+
+    def draw_map(self):
+        self.draw_partial_map(0, self.dimensions[0], 0, self.dimensions[1])
+
+        # def draw_map(self, data=None):
+
+        #     if data is None:
+        #         data = self.data
+
+        #     self.nearby = []
+        #     print()
+        #     print("The Map".center(self.dimensions[1]))
+        #     print(self.top_border_row)
+        #     for row_num, row in enumerate(data):
+        #         char = Icons.SINGLE_V_ROAD
+        #         if row_num in self.streets["horiz"]:
+        #             char = self.streets["horiz"][row_num][0]
+        #         print(char, end="")
+        #         for col_num, col in enumerate(row):
+        #             if [row_num, col_num] == self.current_location:
+        #                 print(colored("⭑", "red"), end="")
+        #             # elif (
+        #             #     distance_points(self.current_location, (row_num, col_num))
+        #             #     > VIEW_DISTANCE
+        #             # ):
+        #             #     print("░", end="")
+        #             elif isinstance(col, Tile):
+        #                 print(col.icon, end="")
+        #                 if col.icon in Buildings:
+        #                     self.nearby.append(col)
+        #             else:
+        #                 print(col, end="")
+
+        #         print(Icons.SINGLE_V_ROAD)
+        #     print(self.bottom_border_row)
 
         # for loc in self.streets["vert"]:
         #     print(self.streets["vert"][loc])
         # for loc in self.streets["horiz"]:
         #     print(self.streets["horiz"][loc])
 
-        for loc in sorted(
-            self.buildings,
-            key=self.sort_key,
-        ):
-            print(loc)
-        # print(self.buildings)
+        # for loc in sorted(
+        #     self.buildings,
+        #     key=self.sort_key,
+        # ):
+        #     print(loc)
+
+        for elem in self.nearby:
+            print(elem.name)
 
 
 street_map = Map()
@@ -189,10 +244,14 @@ street_map.add_road(False, 9, 5, 30)
 street_map.add_road(True, 1, 28, 20)
 
 street_map.add_buildings(40)
-street_map.draw_map()
+
+street_map.draw_partial_map(0, 8, 25, 40)
 input()
-street_map.move("RIGHT")
 street_map.draw_map()
-input()
-street_map.move("RIGHT")
-street_map.draw_map()
+# street_map.draw_map()
+# input()
+# street_map.move("RIGHT")
+# street_map.draw_map()
+# input()
+# street_map.move("RIGHT")
+# street_map.draw_map()

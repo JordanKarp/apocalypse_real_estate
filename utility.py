@@ -10,12 +10,13 @@ def distance_points(a, b):
     return sqrt((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)
 
 
+def proceed():
+    input("Press enter to return to menu.")
+
+
 def clear():
     """Clears the terminal display"""
-    if os.name == "nt":
-        _ = os.system("cls")
-    else:
-        _ = os.system("clear")
+    _ = os.system("cls") if os.name == "nt" else os.system("clear")
 
 
 def colored(text, color):
@@ -53,17 +54,14 @@ def pick_option(prompt, given_list):
         return pick_option(prompt, given_list)
 
 
-def create_table(data, header=True):
+def create_table(data, header=True, max_rows=None):
     """
     Creates a user-readable table from a list of lists or tuples.
-
-    Parameters:
-    - data: A list of lists or tuples, where each sub-list represents a row in the table.
-    - header: A boolean indicating whether the first row is a header (default is True).
-
-    Returns:
-    - A formatted string representing the table.
+    Allows optional row limit for large datasets.
     """
+    if max_rows is not None:
+        data = data[:max_rows]
+
     # Calculate the maximum width of each column
     col_widths = [max(len(str(item)) for item in col) for col in zip(*data)]
 
@@ -100,3 +98,20 @@ def list2d_get(lst, row, col, default=None):
     if 0 <= row < len(lst) and 0 <= col < len(lst[row]):
         return lst[row][col]
     return default
+
+
+def extract_subgrid(data, row_start, row_end, col_start, col_end):
+    """
+    Extract a subgrid from a 2D list based on the given row and column boundaries.
+
+    Parameters:
+        data (list of list): The 2D list of data.
+        row_start (int): The starting row index (inclusive).
+        row_end (int): The ending row index (exclusive).
+        col_start (int): The starting column index (inclusive).
+        col_end (int): The ending column index (exclusive).
+
+    Returns:
+        list of list: A new 2D list containing the extracted subgrid.
+    """
+    return [row[col_start:col_end] for row in data[row_start:row_end]]
