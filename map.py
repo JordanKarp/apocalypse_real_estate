@@ -153,7 +153,10 @@ class Map:
         data = extract_subgrid(self.data, row_st, row_end, col_st, col_end)
 
         # ! TODO FIX
-        adjusted_location = self.current_location
+        adjusted_location = [
+            self.current_location[0] - row_st,
+            self.current_location[1] - col_st,
+        ]
 
         self.nearby = []
         print("The Map".center(col_end - col_st // 2))
@@ -168,7 +171,7 @@ class Map:
                 if [row_num, col_num] == adjusted_location:
                     print(colored("⭑", "red"), end="")
                 # elif (
-                #     distance_points(self.current_location, (row_num, col_num))
+                #     distance_points(adjusted_location, (row_num, col_num))
                 #     > VIEW_DISTANCE
                 # ):
                 #     print("░", end="")
