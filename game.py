@@ -1,7 +1,9 @@
 from random import randint
 
+from daily_log import DailyLog
 from location import Location
 from menu_options import GameMenu
+from map import Map
 from party import Party
 from utility import clear, colored, pick_option, create_table, proceed
 from state import State
@@ -37,6 +39,7 @@ class Game(State):
         self.apocalypse = None
         self.map = None
         self.party = None
+        self.log = None
         self.locations = []
 
     def startup(self, persistent=None):
@@ -47,7 +50,8 @@ class Game(State):
         self.persist = persistent
         self.apocalypse = self.persist.get("apocalypse", "Pandemic")
         self.party = self.persist.get("party", Party())
-        self.map = self.persist.get("map", None)
+        self.map = self.persist.get("map", Map().new_map())
+        self.log = self.persist.get("log", DailyLog())
 
     def print_header(self):
         print("-" * 5, f"Day {self.day_number} - {self.apocalypse.name}", "-" * 5)
@@ -56,6 +60,7 @@ class Game(State):
 
     def present_options(self):
         options = [
+            (GameMenu.SHOW_LOG, 0, 0),
             (GameMenu.SHOW_MAP, 0, 0),
             # (GameMenu.SHOW_PARTY, None),
             (GameMenu.NOTHING, 0, 0),
@@ -157,6 +162,11 @@ class Game(State):
             proceed()
             self.deciding_loop()
 
+        if choice_str == GameMenu.SHOW_LOG:
+            self.log.print_log()
+            proceed()
+            self.deciding_loop()
+
         elif choice_str == GameMenu.SHOW_PARTY:
             self.party.display_full_stats()
             proceed()
@@ -173,17 +183,28 @@ class Game(State):
                 "Which skill would you like to improve?", self.party.skills
             )
             choice.adjust_amount(SKILL_ADD_AMOUNT)
-            print(f"{choice.name} was improved by {SKILL_ADD_AMOUNT}")
-            print(choice)
+            self.log.add_entry(
+                self.day_number, f"{choice.name} was improved by {SKILL_ADD_AMOUNT}"
+            )
+            # print(f"{choice.name} was improved by {SKILL_ADD_AMOUNT}")
+            # print(choice)
 
             amt = int(IMPROVE_COST * self.apocalypse.mult["improve_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy improving {choice.name}")
+            self.log.add_entry(
+                self.day_number, "Spent {amt} energy improving {choice.name}"
+            )
+            # print(f"Spent {amt} energy improving {choice.name}")
 
         elif choice_str == GameMenu.TRAVEL:
             self.days_to_pass = TRAVEL_DAYS * self.apocalypse.mult["travel_cost"]
             self.party.travel(self.days_to_pass)
-            # TODO: Generate new area
+            self.log.add_entry(
+                self.day_number,
+                f"{self.days_to_pass} days will pass on your journey to a new area.",
+            )
+            # TODO FIX
+            self.map = Map.new_map()
 
         elif choice_str == GameMenu.SCOUT:
             # TODO make better than adding 1-3 random locations
@@ -193,23 +214,30 @@ class Game(State):
                 location = Location.random_location()
                 self.party.scouted.append(location)
                 locs.append(location)
-            print(f"{new_locs} new location(s) found.")
+            self.log.add_entry(self.day_number, f"{new_locs} new location(s) found.")
+            # print(f"{new_locs} new location(s) found.")
             for loc in locs:
                 print("\t-", loc)
 
             amt = int(SCOUT_COST * self.apocalypse.mult["scout_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy scouting")
+            self.log.add_entry(self.day_number, f"Spent {amt} energy scouting")
+            # print(f"Spent {amt} energy scouting")
 
         elif choice_str == GameMenu.SETTLE:
             locs = self.party.display_unoccupied_locations()
             choice = pick_option("Which location to settle?", locs)
             self.party.settle_location(choice)
-            print(choice.address, "has been settled.")
+            self.log.add_entry(self.day_number, f"{choice.address} has been settled.")
+            # print(choice.address, "has been settled.")
 
             amt = int(SETTLE_COST * self.apocalypse.mult["settle_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy settling new location.")
+            self.log.add_entry(
+                self.day_number, f"Spent {amt} energy settling new location."
+            )
+
+            # print(f"Spent {amt} energy settling new location.")
 
         elif choice_str == GameMenu.SCAVENGE:
 
@@ -226,11 +254,11 @@ class Game(State):
             # gain amount, or as much as they have of each type
             amt = supply if choice.supplies >= supply else choice.supplies
             self.party.supplies += amt
-            print(f"Gained {amt} supplies.")
+            self.log.add_entry(self.day_number, f"Gained {amt} supplies.")
 
             amt = consume if choice.consumables >= consume else choice.supplies
             self.party.consumables += amt
-            print(f"Gained {amt} consumables.")
+            self.log.add_entry(self.day_number, f"Gained {amt} consumables.")
 
             # Remove rest of materials
             choice.consumables = 0
@@ -241,7 +269,7 @@ class Game(State):
 
             amt = SCAVENGE_COST * self.apocalypse.mult["scavenge_cost"]
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy scavenging")
+            self.log.add_entry(self.day_number, f"Spent {amt} energy scavenging")
 
         elif choice_str == GameMenu.NEGOTIATE:
             # Pick place
@@ -261,13 +289,14 @@ class Game(State):
                 choice.supplies -= sups
                 self.party.consumables += cons
                 self.party.supplies += sups
-                print(f"Got half their consumables ({cons}) and supplies ({sups})")
+                msg = f"Got half their consumables ({cons}) and supplies ({sups})"
             else:
-                print("Fail. Negotiations unsuccessful")
+                msg = "Fail. Negotiations unsuccessful"
+            self.log.add_entry(self.day_number, msg)
 
             amt = int(NEGOTIATE_COST * self.apocalypse.mult["negotiate_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy negotiating")
+            self.log.add_entry(self.day_number, f"Spent {amt} energy negotiating")
 
         elif choice_str == GameMenu.THREATEN:
             # Pick place
@@ -287,13 +316,14 @@ class Game(State):
                 choice.supplies -= sups
                 self.party.consumables += cons
                 self.party.supplies += sups
-                print(f"Got half their consumables ({cons}) and supplies ({sups})")
+                msg = f"Got half their consumables ({cons}) and supplies ({sups})"
             else:
-                print("Fail. Threatening unsuccessful")
+                msg = "Fail. Threatening unsuccessful"
+            self.log.add_entry(self.day_number, msg)
 
             amt = int(THREATEN_COST * self.apocalypse.mult["threaten_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy threatening")
+            self.log.add_entry(self.day_number, f"Spent {amt} energy threatening")
 
         elif choice_str == GameMenu.STEAL:
             # Pick place
@@ -306,47 +336,56 @@ class Game(State):
             defending = max(vals)
             attacking = randint(0, self.party.steal_skill.value)
             if defending < attacking:
-                print("Success!")
                 cons = int(choice.consumables / 2)
                 sups = int(choice.supplies / 2)
                 choice.consumables -= cons
                 choice.supplies -= sups
                 self.party.consumables += cons
                 self.party.supplies += sups
-                print(f"Got half their consumables ({cons}) and supplies ({sups})")
+                msg = f"Success. Got half their consumables ({cons}) and supplies ({sups})"
             else:
-                print("Fail. Stealing unsuccessful")
+                msg = "Fail. Stealing unsuccessful"
+            self.log.add_entry(self.day_number, msg)
 
             amt = int(STEAL_COST * self.apocalypse.mult["steal_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy stealing")
+            self.log.add_entry(self.day_number, f"Spent {amt} energy stealing")
 
         elif choice_str == GameMenu.BUILD_COMFORT:
             amt = int(COMFORT_ADD_AMOUNT * self.party.settled.comfort.percent)
             self.party.settled.comfort.add_amount(amt)
-            print(f"Added {amt} to comfort")
-            print(f"Used {SUPPLIES_NEEDED_TO_BUILD} supplies")
+            self.log.add_entry(self.day_number, f"Added {amt} to comfort")
+            self.log.add_entry(
+                self.day_number, f"Used {SUPPLIES_NEEDED_TO_BUILD} supplies"
+            )
 
             amt = int(BUILD_COST * self.apocalypse.mult["build_comfort_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy improving comfort")
+            self.log.add_entry(self.day_number, "Spent {amt} energy improving comfort")
 
         elif choice_str == GameMenu.BUILD_PROTECTION:
             amt = int(PROTECTION_ADD_AMOUNT * self.party.settled.protection.percent)
             self.party.settled.protection.adjust_amount(amt)
-            print(f"Added {amt} to protection")
-            print(f"Used {SUPPLIES_NEEDED_TO_BUILD} supplies")
+            self.log.add_entry(self.day_number, f"Added {amt} to protection")
+            self.log.add_entry(
+                self.day_number, f"Used {SUPPLIES_NEEDED_TO_BUILD} supplies"
+            )
 
             amt = int(BUILD_COST * self.apocalypse.mult["build_protection_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy improving protection")
+            self.log.add_entry(
+                self.day_number, f"Spent {amt} energy improving protection"
+            )
 
         elif choice_str == GameMenu.ABANDON:
+            self.log.add_entry(self.day_number, f"Left {self.party.settled.address}.")
             self.party.abandon_location()
 
             amt = int(ABANDON_COST * self.apocalypse.mult["abandon_cost"])
             self.party.energy.adjust_amount(-amt)
-            print(f"Spent {amt} energy abandoning location")
+            self.log.add_entry(
+                self.day_number, f"Spent {amt} energy abandoning location"
+            )
 
         elif choice_str == GameMenu.QUIT:
             self.game_over()
@@ -355,7 +394,9 @@ class Game(State):
             print("*" * 10, choice_str, "TYPO")
 
     def game_over(self):
-        print(f"You have died. You lasted {self.day_number} days.")
+        self.log.add_entry(
+            self.day_number, f"You have died. You lasted {self.day_number} days."
+        )
         self.persist["name"] = "jordan"
         self.persist["score"] = self.day_number
         self.next_state = "HIGH_SCORES"
@@ -363,11 +404,13 @@ class Game(State):
 
     def pass_day(self, number_of_days=1):
         for _ in range(number_of_days):
+            # FIX TO all houses
             for house in self.party.scouted:
                 house.protection.decay()
                 house.comfort.decay()
 
-            self.party.daily_energy_adjust(REST_ADD_AMOUNT)
+            msg = self.party.daily_energy_adjust(REST_ADD_AMOUNT)
+            self.log.add_entry(self.day_number, msg)
             self.party.attitude.decay()
 
             self.day_number += 1

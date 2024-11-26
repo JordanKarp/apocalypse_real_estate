@@ -118,11 +118,8 @@ class Party:
             print("No locations scouted")
             return
         table = [["#", "Location"]]
-        for num, loc in enumerate(self.scouted, 1):
-            table.append([num, loc])
-        print(create_table(table, True))
-        # for num, loc in enumerate(self.scouted, 1):
-        #     print(f"{num}) {loc}")
+        table.extend([num, loc] for num, loc in enumerate(self.scouted, 1))
+        print(create_table(table, header=True))
 
     def display_unoccupied_locations(self):
         unoccupied = [loc for loc in self.scouted if not loc.occupied]
@@ -154,50 +151,31 @@ class Party:
         self.settled = None
 
     def travel(self, days_to_travel):
-        print(f"{days_to_travel} days will pass on your journey.")
+        # print(f"{days_to_travel} days will pass on your journey.")
         self.scouted = []
         self.scavenged = []
 
     def daily_energy_adjust(self, rest_amount):
+        msg = ""
         if self.consumables >= self.consumables_needed:
             self.consumables -= self.consumables_needed
-            print(f"{self.consumables_needed} consumables eaten")
+            msg += f"{self.consumables_needed} consumables eaten. "
         else:
             diff = self.consumables_needed - self.consumables
             self.consumables = 0
             # rest_amount -= diff
             self.energy.adjust_amount(-diff)
-            print(f"Not enough food, {diff} energy lost.")
+            msg += f"Not enough food, {diff} energy lost. "
 
         if self.settled:
             gain = int(self.settled.comfort.value / 10)
             rest_amount += gain
             self.energy.adjust_amount(rest_amount)
-            print(f"Settled, {gain} energy gained.")
+            msg += f"Settled, {gain} energy gained. "
         else:
-            print("Unsettled, no energy gained.")
+            msg += "Unsettled, no energy gained. "
 
-        # if self.consumables <= 0:
-        #     amt = rest_amount - self.consumables_needed
-        #     self.energy.adjust_amount(amt)
-        #     print(f"No food, {amt} energy lost")
-        # elif self.consumables < self.consumables_needed:
-        #     amt = rest_amount - (self.consumables_needed - self.consumables)
-        #     self.energy.adjust_amount(amt)
-        #     self.consumables = 0
-        #     if amt > 0:
-        #         print(f"Limited food, {amt} energy gained")
-        #     else:
-        #         print(f"Limited food, {amt} energy lost")
-
-        # else:
-        #     self.consumables -= self.consumables_needed
-        #     self.energy.adjust_amount(rest_amount)
-        #     if rest_amount > 0:
-        #         print(f"{rest_amount} energy gained")
-        #     else:
-
-        #         print(f"{-rest_amount} energy lost")
+        return msg
 
     def display_full_stats(self):
         self.display_party_stats()
@@ -216,21 +194,13 @@ class Party:
         print("Consumables:", self.consumables, f"({self.days_of_food} days)")
         print("Supplies:", self.supplies)
 
-    def display_party_skills(self, enumerate=False):
-        if enumerate:
-            print("1)", self.negotiate_skill)
-            print("2)", self.threaten_skill)
-            print("3)", self.steal_skill)
-            print("4)", self.scout_skill)
-            print("5)", self.scavenge_skill)
-            print("6)", self.build_skill)
-        else:
-            print(self.negotiate_skill)
-            print(self.threaten_skill)
-            print(self.steal_skill)
-            print(self.scout_skill)
-            print(self.scavenge_skill)
-            print(self.build_skill)
+    def display_party_skills(self, numberize=False):
+        # skills = ["a", "b", "c"]
+        for num, skill in enumerate(self.skills):
+            if numberize:
+                print(f"{num}) {skill}")
+            else:
+                print(skill)
 
     def display_settled_stats(self):
         print(f"Party is settled at {self.settled.address}")

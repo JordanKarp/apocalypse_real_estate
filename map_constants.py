@@ -92,29 +92,30 @@ class Tile:
 
 
 ROAD_NAMES = [
-    "MAIN STREET",
-    "OAK AVENUE",
-    "PINE ROAD",
-    "MAPLE LANE",
-    "CEDAR DRIVE",
-    "ELM STREET",
-    "WILLOW WAY",
-    "ASH COURT",
-    "BIRCH BOULEVARD",
-    "SPRUCE TRAIL",
-    "CHESTNUT PLACE",
-    "HICKORY ROAD",
-    "CYPRESS CIRCLE",
-    "BEECH AVENUE",
-    "LOCUST LANE",
-    "MAGNOLIA STREET",
-    "DOGWOOD DRIVE",
-    "REDWOOD ROAD",
-    "PALM WAY",
-    "HOLLY COURT",
-    "ALDER ROAD",
-    "JUNIPER BOULEVARD",
-    "SEQUOIA TRAIL",
-    "POPLAR PLACE",
-    "FIR STREET",
+    "Applewood Ave",  # A
+    "Birch Blvd",  # B
+    "Cedar Circle",  # C
+    "Dogwood Dr",  # D
+    "Elm St",  # E
+    "Fir Ln",  # F
+    "Garden Grove",  # G
+    "Hazelwood Ct",  # H
+    "Ivy Rd",  # I
+    "Juniper Way",  # J
+    "Kingston Pkwy",  # K
+    "Linden Ln",  # L
+    "Maple Ave",  # M
+    "Northwood Blvd",  # N
+    "Oak St",  # O
+    "Pine Pl",  # P
+    "Quail Hollow",  # Q
+    "Rosewood Rd",  # R
+    "Sycamore St",  # S
+    "Tamarack Trl",  # T
+    "Upland Dr",  # U
+    "Valley View",  # V
+    "Willow Way",  # W
+    "Xavier Ct",  # X
+    "Yellowstone Rd",  # Y
+    "Zinnia Ln",  # Z
 ]

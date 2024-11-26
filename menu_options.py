@@ -39,6 +39,7 @@ class OptionsMenu(StrEnum):
 
 
 class GameMenu(StrEnum):
+    SHOW_LOG = "Show daily log"
     SHOW_MAP = "Show current area map"
     SHOW_SCOUTED = "Show currently scouted homes"
     SHOW_PARTY = "Show current party stats"

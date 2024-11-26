@@ -1,4 +1,4 @@
-from random import choice, sample
+from random import choice, sample, randint
 from location import Location
 from map_constants import Buildings, Icons, Tile, ROAD_NAMES
 from utility import list2d_get, colored, distance_points, extract_subgrid
@@ -17,6 +17,66 @@ class Map:
         self.current_location = [4, 28]
         self.data = [[" " for _ in range(dimensions[1])] for _ in range(dimensions[0])]
         self.nearby = []
+
+    @classmethod
+    def new_map(cls, dimensions=(MAP_ROWS, MAP_COLUMNS)):
+        new_m = Map(dimensions)
+        # cls.create_connected_roads(dimensions, 10, cls.add_road)
+        # new_m.add_road(False, 4, 1, 84)
+        return new_m
+
+    def create_connected_roads(self, grid_size, num_roads, create_road_function):
+        """
+        Creates a connected network of roads on a 2D grid.
+
+        Args:
+            grid_size (int): The size of the grid (e.g., 10 means 10x10 grid).
+            num_roads (int): The number of roads to generate.
+            create_road_function (func): A function that creates a road.
+                                        Takes (is_vertical, row_start_pos, col_start_pos, length).
+        """
+        # Start by placing the first road randomly
+        roads = []
+        current_position = (
+            randint(0, grid_size[0] - 1),
+            randint(0, grid_size[1] - 1),
+        )  # Random starting point
+        is_vertical = choice([True, False])
+        if is_vertical:
+            length = randint(MIN_ROAD_LENGTH, grid_size[0])  # Length of the first road
+        else:
+            length = randint(MIN_ROAD_LENGTH, grid_size[1])  # Length of the first road
+        roads.append((is_vertical, *current_position, length))
+        create_road_function(
+            is_vertical, current_position[0], current_position[1], length
+        )
+
+        # Generate additional connected roads
+        for _ in range(num_roads - 1):
+            # Pick a random road and connect a new road to it
+            connected_road = choice(roads)
+            is_vertical, row, col, road_length = connected_road
+
+            # Determine the connection point
+            if is_vertical:
+                connection_point = (row + randint(0, road_length - 1), col)
+            else:
+                connection_point = (row, col + randint(0, road_length - 1))
+
+            # Create a new road from the connection point
+            is_vertical_new = not is_vertical  # Alternate direction
+            if is_vertical_new:  # Vertical road
+                new_row = connection_point[0]
+                new_col = connection_point[1]
+                new_length = randint(MIN_ROAD_LENGTH, grid_size[0])
+                roads.append((True, new_row, new_col, new_length))
+                create_road_function(True, new_row, new_col, new_length)
+            else:  # Horizontal road
+                new_row = connection_point[0]
+                new_col = connection_point[1]
+                new_length = randint(MIN_ROAD_LENGTH, grid_size[1])
+                roads.append((False, new_row, new_col, new_length))
+                create_road_function(False, new_row, new_col, new_length)
 
     def move_to(self, loc):
         self.current_location = loc
@@ -76,7 +136,7 @@ class Map:
     def add_horizontal_road(self, row_st, col_st, length, name):
         if length:
             for _ in range(length):
-                if self.data[row_st][col_st] == Icons.EMPTY:
+                if list2d_get(self.data, row_st, col_st, None) == Icons.EMPTY:
                     self.data[row_st][col_st] = Tile(
                         Icons.H_ROAD, (row_st, col_st), name
                     )
@@ -159,7 +219,7 @@ class Map:
         ]
 
         self.nearby = []
-        print("The Map".center(col_end - col_st // 2))
+        print("The Map".center(col_end - col_st))
         print(self.top_border_row(col_st, col_end))
         for row_num, row in enumerate(data):
             char = Icons.SINGLE_V_ROAD
@@ -238,19 +298,19 @@ class Map:
             print(elem.name)
 
 
-street_map = Map()
+# street_map = Map()
 
-street_map.add_road(False, 4, 1, 84)
-street_map.add_road(False, 8, 25, 40)
-street_map.add_road(True, 3, 2, 8)
-street_map.add_road(False, 9, 5, 30)
-street_map.add_road(True, 1, 28, 20)
+# street_map.add_road(False, 4, 1, 84)
+# street_map.add_road(False, 8, 25, 40)
+# street_map.add_road(True, 3, 2, 8)
+# street_map.add_road(False, 9, 5, 30)
+# street_map.add_road(True, 1, 28, 20)
 
-street_map.add_buildings(40)
+# street_map.add_buildings(40)
 
-street_map.draw_partial_map(0, 8, 25, 40)
-input()
-street_map.draw_map()
+# street_map.draw_partial_map(0, 8, 25, 40)
+# input()
+# street_map.draw_map()
 # street_map.draw_map()
 # input()
 # street_map.move("RIGHT")

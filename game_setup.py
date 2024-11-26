@@ -52,6 +52,7 @@ class GameSetupState(State):
         dimensions = (15, 90)
         num_buildings = 50
         game_map = Map(dimensions)
+        # game_map.create_connected_roads(dimensions, 10, game_map.add_road)
         game_map.add_road(False, 4, 1, 84)
         game_map.add_road(False, 8, 25, 40)
         game_map.add_road(True, 3, 2, 8)
