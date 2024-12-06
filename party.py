@@ -3,6 +3,9 @@ from random import randint
 from dataclasses import dataclass, field
 from trait import Trait
 from utility import create_table
+from inventory import Inventory
+
+INVENTORY_SIZE = 50
 
 
 @dataclass
@@ -15,103 +18,71 @@ class Party:
     settled: None = None
     scouted: list = field(default_factory=lambda: [])
     scavenged: list = field(default_factory=lambda: [])
-    negotiate_skill: Trait = Trait("Negotiate Skill", 50, 100, 0)
-    threaten_skill: Trait = Trait("Threaten Skill", 50, 100, 0)
-    steal_skill: Trait = Trait("Steal Skill", 50, 100, 0)
-    scout_skill: Trait = Trait("Scout Skill", 50, 100, 0)
-    scavenge_skill: Trait = Trait("Scavenge Skill", 50, 100, 0)
-    build_skill: Trait = Trait("Building Skill", 50, 100, 0)
+    inventory = Inventory(INVENTORY_SIZE)
 
     @staticmethod
     def easy():
         return Party(
             energy=Trait("Energy", 100, 100, 0),
-            attitude=Trait("Attitude", 100, 100, 5),
             consumables=50,
             consumables_needed=10,
             supplies=50,
             settled=None,
-            scouted=[],
-            scavenged=[],
-            negotiate_skill=Trait("Negotiate Skill", 75, 100, 0),
-            threaten_skill=Trait("Threaten Skill", 75, 100, 0),
-            steal_skill=Trait("Steal Skill", 75, 100, 0),
-            scout_skill=Trait("Scout Skill", 75, 100, 0),
-            scavenge_skill=Trait("Scavenge Skill", 75, 100, 0),
-            build_skill=Trait("Building Skill", 75, 100, 0),
         )
 
     @staticmethod
     def average():
         return Party(
             energy=Trait("Energy", 100, 100, 0),
-            attitude=Trait("Attitude", 100, 100, 5),
             consumables=50,
             consumables_needed=12,
             supplies=50,
             settled=None,
             scouted=[],
             scavenged=[],
-            negotiate_skill=Trait("Negotiate Skill", 50, 100, 0),
-            threaten_skill=Trait("Threaten Skill", 50, 100, 0),
-            steal_skill=Trait("Steal Skill", 50, 100, 0),
-            scout_skill=Trait("Scout Skill", 50, 100, 0),
-            scavenge_skill=Trait("Scavenge Skill", 50, 100, 0),
-            build_skill=Trait("Building Skill", 50, 100, 0),
+            inventory=Inventory(INVENTORY_SIZE),
         )
 
     @staticmethod
     def hard():
         return Party(
             energy=Trait("Energy", 100, 100, 0),
-            attitude=Trait("Attitude", 100, 100, 5),
             consumables=50,
             consumables_needed=15,
             supplies=50,
             settled=None,
             scouted=[],
             scavenged=[],
-            negotiate_skill=Trait("Negotiate Skill", 25, 100, 0),
-            threaten_skill=Trait("Threaten Skill", 25, 100, 0),
-            steal_skill=Trait("Steal Skill", 25, 100, 0),
-            scout_skill=Trait("Scout Skill", 25, 100, 0),
-            scavenge_skill=Trait("Scavenge Skill", 25, 100, 0),
-            build_skill=Trait("Building Skill", 25, 100, 0),
+            inventory=Inventory(INVENTORY_SIZE),
         )
 
     @staticmethod
     def random():
         return Party(
             energy=Trait("Energy", 100, 100, 0),
-            attitude=Trait("Attitude", 100, 100, 5),
             consumables=50,
             consumables_needed=randint(0, 50),
             supplies=randint(0, 50),
             settled=None,
             scouted=[],
             scavenged=[],
-            negotiate_skill=Trait("Negotiate Skill", randint(0, 100), 100, 0),
-            threaten_skill=Trait("Threaten Skill", randint(0, 100), 100, 0),
-            steal_skill=Trait("Steal Skill", randint(0, 100), 100, 0),
-            scout_skill=Trait("Scout Skill", randint(0, 100), 100, 0),
-            scavenge_skill=Trait("Scavenge Skill", randint(0, 100), 100, 0),
-            build_skill=Trait("Building Skill", randint(0, 100), 100, 0),
+            inventory=Inventory(INVENTORY_SIZE),
         )
 
     @property
     def days_of_food(self):
         return self.consumables // self.consumables_needed
 
-    @property
-    def skills(self):
-        return [
-            self.negotiate_skill,
-            self.threaten_skill,
-            self.steal_skill,
-            self.scout_skill,
-            self.scavenge_skill,
-            self.build_skill,
-        ]
+    # @property
+    # def skills(self):
+    #     return [
+    #         self.negotiate_skill,
+    #         self.threaten_skill,
+    #         self.steal_skill,
+    #         self.scout_skill,
+    #         self.scavenge_skill,
+    #         self.build_skill,
+    #     ]
 
     def display_scouted_locations(self):
         if not self.scouted:
@@ -179,7 +150,7 @@ class Party:
 
     def display_full_stats(self):
         self.display_party_stats()
-        self.display_party_skills()
+        # self.display_party_skills()
         if self.settled:
             self.display_settled_stats()
         else:
@@ -190,17 +161,18 @@ class Party:
 
     def display_party_stats(self):
         print(self.energy)
-        print(self.attitude)
+        # print(self.attitude)
         print("Consumables:", self.consumables, f"({self.days_of_food} days)")
         print("Supplies:", self.supplies)
+        print(self.inventory.summary())
 
-    def display_party_skills(self, numberize=False):
-        # skills = ["a", "b", "c"]
-        for num, skill in enumerate(self.skills):
-            if numberize:
-                print(f"{num}) {skill}")
-            else:
-                print(skill)
+    # def display_party_skills(self, numberize=False):
+    #     # skills = ["a", "b", "c"]
+    #     for num, skill in enumerate(self.skills):
+    #         if numberize:
+    #             print(f"{num}) {skill}")
+    #         else:
+    #             print(skill)
 
     def display_settled_stats(self):
         print(f"Party is settled at {self.settled.address}")

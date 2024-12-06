@@ -41,6 +41,7 @@ class OptionsMenu(StrEnum):
 class GameMenu(StrEnum):
     SHOW_LOG = "Show daily log"
     SHOW_MAP = "Show current area map"
+    SHOW_INVENTORY = "Show party inventory"
     SHOW_SCOUTED = "Show currently scouted homes"
     SHOW_PARTY = "Show current party stats"
     NOTHING = "Do nothing"
@@ -49,9 +50,6 @@ class GameMenu(StrEnum):
     SCOUT = "Scout nearby homes"
     SETTLE = "Settle an unoccupied home"
     SCAVENGE = "Scavenge a unoccupied home"
-    NEGOTIATE = "Negotiate with another party"
-    THREATEN = "Threaten another party"
-    STEAL = "Steal from  another party "
     BUILD_COMFORT = "Build home comfort"
     BUILD_PROTECTION = "Build home protection"
     ABANDON = "Abandon current home"

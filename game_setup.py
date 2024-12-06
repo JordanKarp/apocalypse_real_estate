@@ -51,14 +51,14 @@ class GameSetupState(State):
     def create_map(self):
         dimensions = (15, 90)
         num_buildings = 50
-        game_map = Map(dimensions)
+        game_map = Map(dimensions).new_map()
         # game_map.create_connected_roads(dimensions, 10, game_map.add_road)
-        game_map.add_road(False, 4, 1, 84)
-        game_map.add_road(False, 8, 25, 40)
-        game_map.add_road(True, 3, 2, 8)
-        game_map.add_road(False, 9, 5, 30)
-        game_map.add_road(True, 1, 28, 20)
-        game_map.add_buildings(num_buildings)
+        # game_map.add_road(False, 4, 1, 89)
+        # game_map.add_road(False, 8, 25, 40)
+        # game_map.add_road(True, 3, 2, 8)
+        # game_map.add_road(False, 9, 5, 30)
+        # game_map.add_road(True, 1, 28, 20)
+        # game_map.add_buildings(num_buildings)
 
         self.persist["map"] = game_map
 

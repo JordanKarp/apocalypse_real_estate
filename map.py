@@ -5,8 +5,9 @@ from utility import list2d_get, colored, distance_points, extract_subgrid
 
 MIN_ROAD_LENGTH = 3
 MAP_COLUMNS = 90
-MAP_ROWS = 15
+MAP_ROWS = 12
 VIEW_DISTANCE = 7
+MAP_BUILDINGS = 140
 
 
 class Map:
@@ -19,64 +20,39 @@ class Map:
         self.nearby = []
 
     @classmethod
-    def new_map(cls, dimensions=(MAP_ROWS, MAP_COLUMNS)):
+    def new_map(cls, dimensions=(MAP_ROWS, MAP_COLUMNS), buildings=MAP_BUILDINGS):
         new_m = Map(dimensions)
-        # cls.create_connected_roads(dimensions, 10, cls.add_road)
-        # new_m.add_road(False, 4, 1, 84)
-        return new_m
-
-    def create_connected_roads(self, grid_size, num_roads, create_road_function):
-        """
-        Creates a connected network of roads on a 2D grid.
-
-        Args:
-            grid_size (int): The size of the grid (e.g., 10 means 10x10 grid).
-            num_roads (int): The number of roads to generate.
-            create_road_function (func): A function that creates a road.
-                                        Takes (is_vertical, row_start_pos, col_start_pos, length).
-        """
-        # Start by placing the first road randomly
-        roads = []
-        current_position = (
-            randint(0, grid_size[0] - 1),
-            randint(0, grid_size[1] - 1),
-        )  # Random starting point
-        is_vertical = choice([True, False])
-        if is_vertical:
-            length = randint(MIN_ROAD_LENGTH, grid_size[0])  # Length of the first road
-        else:
-            length = randint(MIN_ROAD_LENGTH, grid_size[1])  # Length of the first road
-        roads.append((is_vertical, *current_position, length))
-        create_road_function(
-            is_vertical, current_position[0], current_position[1], length
-        )
-
-        # Generate additional connected roads
-        for _ in range(num_roads - 1):
-            # Pick a random road and connect a new road to it
-            connected_road = choice(roads)
-            is_vertical, row, col, road_length = connected_road
-
-            # Determine the connection point
-            if is_vertical:
-                connection_point = (row + randint(0, road_length - 1), col)
+        init_num_horiz = dimensions[0] // 5
+        prev = 0
+        for i in range(init_num_horiz):
+            row_st = randint(prev, (i + 1) * (dimensions[0] // init_num_horiz))
+            print(prev, (i + 1) * (dimensions[0] // init_num_horiz), row_st)
+            if i == 0:
+                col_st = 0
+                length = dimensions[1] - col_st
             else:
-                connection_point = (row, col + randint(0, road_length - 1))
+                col_st = randint(1, dimensions[1] // 4)
+                length = randint(dimensions[1] // 2, dimensions[1] - col_st)
+            prev = row_st + MIN_ROAD_LENGTH
+            new_m.add_road(False, row_st, col_st, length)
 
-            # Create a new road from the connection point
-            is_vertical_new = not is_vertical  # Alternate direction
-            if is_vertical_new:  # Vertical road
-                new_row = connection_point[0]
-                new_col = connection_point[1]
-                new_length = randint(MIN_ROAD_LENGTH, grid_size[0])
-                roads.append((True, new_row, new_col, new_length))
-                create_road_function(True, new_row, new_col, new_length)
-            else:  # Horizontal road
-                new_row = connection_point[0]
-                new_col = connection_point[1]
-                new_length = randint(MIN_ROAD_LENGTH, grid_size[1])
-                roads.append((False, new_row, new_col, new_length))
-                create_road_function(False, new_row, new_col, new_length)
+        init_num_vert = dimensions[1] // 20
+        prev = 0
+        for i in range(init_num_vert):
+            row_st = randint(1, dimensions[0] // 4)
+            col_st = randint(1, (i + 1) * (dimensions[1] // init_num_vert))
+            if i == 0:
+                row_st = 0
+                length = dimensions[0] - row_st
+            else:
+                row_st = randint(1, dimensions[0] // 4)
+                length = randint(dimensions[0] // 2, dimensions[0] - row_st)
+            prev = col_st + MIN_ROAD_LENGTH
+            new_m.add_road(True, row_st, col_st, length)
+
+        new_m.add_buildings(MAP_BUILDINGS)
+
+        return new_m
 
     def move_to(self, loc):
         self.current_location = loc
@@ -147,38 +123,46 @@ class Map:
                 col_st += 1
             self.streets["horiz"][row_st] = name
 
-    def determine_eligible_spots(self):
+    def determine_eligible_spots(self, num_eligible_spots=1):
         eligible_spots = []
         for row in range(self.dimensions[0]):
             for col in range(self.dimensions[1]):
                 if self.data[row][col] == Icons.EMPTY:
                     neighbors = self.get_neighbors(row, col)
-                    if len(neighbors) == 1:
-                        is_even = False
-                        if (
-                            neighbors[0].grid_loc[0] > row
-                            or neighbors[0].grid_loc[1] > col
-                        ):
-                            is_even = True
-                        if neighbors[0].icon == Icons.H_ROAD:
-                            num = col * 2 if is_even else col * 2 + 1
-                        else:
-                            num = row * 2 if is_even else row * 2 + 1
-                        name = f"{num} {neighbors[0].name}"
-                        eligible_spots.append((row, col, name))
+                    # if len(neighbors) in [0, 1, 2, 3, 4, 5, 6]:
+
+                    # is_even = False
+                    # if (
+                    #     neighbors[0].grid_loc[0] > row
+                    #     or neighbors[0].grid_loc[1] > col
+                    # ):
+                    #     is_even = True
+                    # if neighbors[0].icon == Icons.H_ROAD:
+                    #     num = col * 2 if is_even else col * 2 + 1
+                    # else:
+                    #     num = row * 2 if is_even else row * 2 + 1
+                    # name = f"{num} {neighbors[0].name}"
+                    name = min(len(neighbors), 9)
+                    eligible_spots.append((row, col, name))
         return eligible_spots
 
     def add_buildings(self, num_buildings):
+        # get all eligible spots
+        # for each eligible spot
+        #   choose a building based on building probabilities
+
         eligible_spots = self.determine_eligible_spots()
         buildings = list(Buildings)
-        for spot in sample(eligible_spots, num_buildings):
+        # for spot in sample(eligible_spots, num_buildings):
+        for spot in eligible_spots:
 
             building = Tile(choice(buildings), (spot[0], spot[1]), spot[2])
             location = Location(
                 spot[2], occupied=False, name="HOUSETYPE", floors="FLOORS"
             )
             self.buildings.append(location)
-            self.data[spot[0]][spot[1]] = building
+            # self.data[spot[0]][spot[1]] = building
+            self.data[spot[0]][spot[1]] = spot[2]
 
     # def remove_neighbors(self, eligible_spots, spot):
     #     if (spot[0] - 1, spot[1]) in eligible_spots:
@@ -192,14 +176,20 @@ class Map:
 
     def get_neighbors(self, row, col):
         neighbors = []
-        if list2d_get(self.data, row - 1, col, Icons.EMPTY) != Icons.EMPTY:
-            neighbors.append(self.data[row - 1][col])
-        if list2d_get(self.data, row + 1, col, Icons.EMPTY) != Icons.EMPTY:
-            neighbors.append(self.data[row + 1][col])
-        if list2d_get(self.data, row, col - 1, Icons.EMPTY) != Icons.EMPTY:
-            neighbors.append(self.data[row][col - 1])
-        if list2d_get(self.data, row, col + 1, Icons.EMPTY) != Icons.EMPTY:
-            neighbors.append(self.data[row][col + 1])
+        pairs = [
+            (row - 1, col - 1),
+            (row - 1, col),
+            (row - 1, col + 1),
+            (row, col - 1),
+            (row, col + 1),
+            (row + 1, col - 1),
+            (row + 1, col),
+            (row + 1, col + 1),
+        ]
+        for n_row, n_col in pairs:
+            if list2d_get(self.data, n_row, n_col, Icons.EMPTY) != Icons.EMPTY:
+                neighbors.append(self.data[n_row][n_col])
+
         return neighbors
 
     def sort_key(self, tile):
@@ -251,70 +241,6 @@ class Map:
     def draw_map(self):
         self.draw_partial_map(0, self.dimensions[0], 0, self.dimensions[1])
 
-        # def draw_map(self, data=None):
 
-        #     if data is None:
-        #         data = self.data
-
-        #     self.nearby = []
-        #     print()
-        #     print("The Map".center(self.dimensions[1]))
-        #     print(self.top_border_row)
-        #     for row_num, row in enumerate(data):
-        #         char = Icons.SINGLE_V_ROAD
-        #         if row_num in self.streets["horiz"]:
-        #             char = self.streets["horiz"][row_num][0]
-        #         print(char, end="")
-        #         for col_num, col in enumerate(row):
-        #             if [row_num, col_num] == self.current_location:
-        #                 print(colored("⭑", "red"), end="")
-        #             # elif (
-        #             #     distance_points(self.current_location, (row_num, col_num))
-        #             #     > VIEW_DISTANCE
-        #             # ):
-        #             #     print("░", end="")
-        #             elif isinstance(col, Tile):
-        #                 print(col.icon, end="")
-        #                 if col.icon in Buildings:
-        #                     self.nearby.append(col)
-        #             else:
-        #                 print(col, end="")
-
-        #         print(Icons.SINGLE_V_ROAD)
-        #     print(self.bottom_border_row)
-
-        # for loc in self.streets["vert"]:
-        #     print(self.streets["vert"][loc])
-        # for loc in self.streets["horiz"]:
-        #     print(self.streets["horiz"][loc])
-
-        # for loc in sorted(
-        #     self.buildings,
-        #     key=self.sort_key,
-        # ):
-        #     print(loc)
-
-        for elem in self.nearby:
-            print(elem.name)
-
-
-# street_map = Map()
-
-# street_map.add_road(False, 4, 1, 84)
-# street_map.add_road(False, 8, 25, 40)
-# street_map.add_road(True, 3, 2, 8)
-# street_map.add_road(False, 9, 5, 30)
-# street_map.add_road(True, 1, 28, 20)
-
-# street_map.add_buildings(40)
-
-# street_map.draw_partial_map(0, 8, 25, 40)
-# input()
-# street_map.draw_map()
-# street_map.draw_map()
-# input()
-# street_map.move("RIGHT")
-# street_map.draw_map()
-# input()
-# street_map.move("RIGHT")
-# street_map.draw_map()
+# new = Map((15, 90)).new_map()
+# new.draw_map()

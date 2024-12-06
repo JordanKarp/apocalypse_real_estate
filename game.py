@@ -62,6 +62,7 @@ class Game(State):
         options = [
             (GameMenu.SHOW_LOG, 0, 0),
             (GameMenu.SHOW_MAP, 0, 0),
+            (GameMenu.SHOW_INVENTORY, 0, 0),
             # (GameMenu.SHOW_PARTY, None),
             (GameMenu.NOTHING, 0, 0),
             (GameMenu.SCOUT, int(SCOUT_COST * self.apocalypse.mult["scout_cost"]), 0),
@@ -93,28 +94,6 @@ class Game(State):
                         (
                             GameMenu.SCAVENGE,
                             int(SCAVENGE_COST * self.apocalypse.mult["scavenge_cost"]),
-                            0,
-                        ),
-                    )
-                )
-            if any(loc.occupied for loc in self.party.scouted):
-                options.extend(
-                    (
-                        (
-                            GameMenu.NEGOTIATE,
-                            int(
-                                NEGOTIATE_COST * self.apocalypse.mult["negotiate_cost"]
-                            ),
-                            0,
-                        ),
-                        (
-                            GameMenu.THREATEN,
-                            int(THREATEN_COST * self.apocalypse.mult["threaten_cost"]),
-                            0,
-                        ),
-                        (
-                            GameMenu.STEAL,
-                            int(STEAL_COST * self.apocalypse.mult["steal_cost"]),
                             0,
                         ),
                     )
@@ -162,8 +141,17 @@ class Game(State):
             proceed()
             self.deciding_loop()
 
-        if choice_str == GameMenu.SHOW_LOG:
+        elif choice_str == GameMenu.SHOW_LOG:
             self.log.print_log()
+            proceed()
+            self.deciding_loop()
+
+        elif choice_str == GameMenu.SHOW_INVENTORY:
+
+            self.party.inventory.add_item(
+                "Can of Sardines", 1, 1, "Good to eat, not so enjoyable."
+            )
+            print(self.party.inventory)
             proceed()
             self.deciding_loop()
 
@@ -270,86 +258,6 @@ class Game(State):
             amt = SCAVENGE_COST * self.apocalypse.mult["scavenge_cost"]
             self.party.energy.adjust_amount(-amt)
             self.log.add_entry(self.day_number, f"Spent {amt} energy scavenging")
-
-        elif choice_str == GameMenu.NEGOTIATE:
-            # Pick place
-            locs = self.party.display_occupied_locations()
-            choice = pick_option("With which location do you want to negotiate?", locs)
-            vals = [
-                randint(1, choice.protection.value)
-                for _ in range(NUM_DEFENDING_CHANCES)
-            ]
-            defending = max(vals)
-            attacking = randint(0, self.party.negotiate_skill.value)
-            if defending < attacking:
-                print("Success!")
-                cons = int(choice.consumables / 2)
-                sups = int(choice.supplies / 2)
-                choice.consumables -= cons
-                choice.supplies -= sups
-                self.party.consumables += cons
-                self.party.supplies += sups
-                msg = f"Got half their consumables ({cons}) and supplies ({sups})"
-            else:
-                msg = "Fail. Negotiations unsuccessful"
-            self.log.add_entry(self.day_number, msg)
-
-            amt = int(NEGOTIATE_COST * self.apocalypse.mult["negotiate_cost"])
-            self.party.energy.adjust_amount(-amt)
-            self.log.add_entry(self.day_number, f"Spent {amt} energy negotiating")
-
-        elif choice_str == GameMenu.THREATEN:
-            # Pick place
-            locs = self.party.display_occupied_locations()
-            choice = pick_option("Which location do you want to threaten?", locs)
-            vals = [
-                randint(1, choice.protection.value)
-                for _ in range(NUM_DEFENDING_CHANCES)
-            ]
-            defending = max(vals)
-            attacking = randint(0, self.party.threaten_skill.value)
-            if defending < attacking:
-                print("Success!")
-                cons = int(choice.consumables / 2)
-                sups = int(choice.supplies / 2)
-                choice.consumables -= cons
-                choice.supplies -= sups
-                self.party.consumables += cons
-                self.party.supplies += sups
-                msg = f"Got half their consumables ({cons}) and supplies ({sups})"
-            else:
-                msg = "Fail. Threatening unsuccessful"
-            self.log.add_entry(self.day_number, msg)
-
-            amt = int(THREATEN_COST * self.apocalypse.mult["threaten_cost"])
-            self.party.energy.adjust_amount(-amt)
-            self.log.add_entry(self.day_number, f"Spent {amt} energy threatening")
-
-        elif choice_str == GameMenu.STEAL:
-            # Pick place
-            locs = self.party.display_occupied_locations()
-            choice = pick_option("From which location do you want to steal?", locs)
-            vals = [
-                randint(1, choice.protection.value)
-                for _ in range(NUM_DEFENDING_CHANCES)
-            ]
-            defending = max(vals)
-            attacking = randint(0, self.party.steal_skill.value)
-            if defending < attacking:
-                cons = int(choice.consumables / 2)
-                sups = int(choice.supplies / 2)
-                choice.consumables -= cons
-                choice.supplies -= sups
-                self.party.consumables += cons
-                self.party.supplies += sups
-                msg = f"Success. Got half their consumables ({cons}) and supplies ({sups})"
-            else:
-                msg = "Fail. Stealing unsuccessful"
-            self.log.add_entry(self.day_number, msg)
-
-            amt = int(STEAL_COST * self.apocalypse.mult["steal_cost"])
-            self.party.energy.adjust_amount(-amt)
-            self.log.add_entry(self.day_number, f"Spent {amt} energy stealing")
 
         elif choice_str == GameMenu.BUILD_COMFORT:
             amt = int(COMFORT_ADD_AMOUNT * self.party.settled.comfort.percent)

@@ -26,8 +26,12 @@ class Icons(str, Enum):
     T_LEFT = "╣"
     T_RIGHT = "╠"
     CROSS = "╬"
+    MIX_T_RIGHT = "╞"
+    MIX_T_LEFT = "╡"
+    MIX_T_UP = "╨"
+    MIX_T_DOWN = "╥"
     EMPTY = " "
-    BUILDING = "█"
+    # BUILDING = "█"
 
     def __str__(self) -> str:
         return str.__str__(self)
